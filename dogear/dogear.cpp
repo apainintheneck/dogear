@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <string>
 #include <cstdlib>
+#include <filesystem>
+#include <system_error>
 
 
 //****
@@ -23,9 +25,10 @@ using bookmark_list = std::list<bookmark>;
 class bookmark_file {
 public:
    bookmark_file() {
-      std::string filename = "/.dogear_store";
-      auto fullpath = std::getenv("HOME") + filename;
-      file_.open(fullpath, std::ios::in | std::ios::out | std::ios::trunc);
+      std::filesystem::path path = std::getenv("HOME");
+      const std::string filename = ".dogear_store";
+      path /= filename;
+      file_.open(path, std::ios::in | std::ios::out | std::ios::trunc);
    }
    
    ~bookmark_file() {
@@ -132,13 +135,13 @@ void fold(const std::string& name) {
    bookmark_file file;
    if(file.is_open()) {
       auto bookmarks = file.get_bookmark_list();
-      const std::string pwd = std::getenv("PWD");
+      const auto path = std::filesystem::current_path();
       
-      auto match_bookmark = [pwd, name](bookmark bm){ return name == bm.name || pwd == bm.path; };
+      const auto match_bookmark = [path, name](bookmark bm){ return name == bm.name || path.string() == bm.path; };
       const auto iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_bookmark);
       
       if(iter == bookmarks.end()) {
-         bookmarks.push_front({name, pwd});
+         bookmarks.push_front({name, path.string()});
          file.save_bookmark_list(bookmarks);
       } else if(iter->name == name) {
          std::cout << "This bookmark name already exists:\n"
@@ -147,7 +150,7 @@ void fold(const std::string& name) {
             
          const char response = std::cin.get();
          if(response == 'y') {
-            iter->path = pwd;
+            iter->path = path.string();
             bookmarks.splice(bookmarks.begin(), bookmarks, iter);
             file.save_bookmark_list(bookmarks);
          }
@@ -172,15 +175,15 @@ void unfold() {
    bookmark_file file;
    if(file.is_open()) {
       auto bookmarks = file.get_bookmark_list();
-      const std::string pwd = std::getenv("PWD");
+      const auto path = std::filesystem::current_path();
       
-      auto match_directory = [pwd](bookmark bm){ return pwd == bm.path; };
+      const auto match_directory = [path](bookmark bm){ return path.string() == bm.path; };
       const auto iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_directory);
       
       if(iter == bookmarks.end()) {
          std::cout << "This directory hasn't been bookmarked\n";
       } else {
-         std::cout << "Unfolded bookmark: " << iter->to_string() << '\n';
+         std::cout << "Unfolded bookmark: " << iter->name << '\n';
          bookmarks.erase(iter);
          file.save_bookmark_list(bookmarks);
       }
@@ -194,7 +197,7 @@ void find(const std::string& name) {
    if(file.is_open()) {
       auto bookmarks = file.get_bookmark_list();
 
-      auto match_name = [name](bookmark bm){ return name == bm.name; };
+      const auto match_name = [name](bookmark bm){ return name == bm.name; };
       const auto iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_name);
       
       if(iter != bookmarks.end()) {
@@ -247,7 +250,20 @@ void edit() {
 }
 
 void clean() {
-   
+   bookmark_file file;
+   if(file.is_open()) {
+      auto bookmarks = file.get_bookmark_list();
+      
+      std::error_code err;
+      const auto nonexistent_path = [&err](bookmark bm){
+         return !std::filesystem::is_directory(bm.path, err);
+      };
+      bookmarks.remove_if(nonexistent_path);
+      
+      std::cout << "Cleaned nonexistent directories from bookmark list\n";
+   } else {
+      std::cout << "Couldn't open bookmark list\n";
+   }
 }
 
 int main(const int argc, const char * argv[]) {
