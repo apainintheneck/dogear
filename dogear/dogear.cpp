@@ -163,11 +163,30 @@ void fold(const std::string& name) {
             file.save_bookmark_list(bookmarks);
          }
       }
+   } else {
+      std::cout << "Couldn't open bookmark list\n";
    }
 }
 
-void unfold(const std::string& name) {
-   
+void unfold() {
+   bookmark_file file;
+   if(file.is_open()) {
+      auto bookmarks = file.get_bookmark_list();
+      const std::string pwd = std::getenv("PWD");
+      
+      auto match_directory = [pwd](bookmark bm){ return pwd == bm.path; };
+      const auto iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_directory);
+      
+      if(iter == bookmarks.end()) {
+         std::cout << "This directory hasn't been bookmarked\n";
+      } else {
+         std::cout << "Unfolded bookmark: " << iter->to_string() << '\n';
+         bookmarks.erase(iter);
+         file.save_bookmark_list(bookmarks);
+      }
+   } else {
+      std::cout << "Couldn't open bookmark list\n";
+   }
 }
 
 void find(const std::string& name) {
@@ -244,8 +263,7 @@ int main(const int argc, const char * argv[]) {
          if(valid_name(bookmark))
             fold(bookmark);
       } else if(cmd == "unfold") {
-         if(valid_name(bookmark))
-            unfold(bookmark);
+         unfold();
       } else if(cmd == "find") {
          find(bookmark);
       } else if(cmd == "recent") {
