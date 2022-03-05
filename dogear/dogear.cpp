@@ -129,7 +129,41 @@ Project can be found here: (Github Link)
 }
 
 void fold(const std::string& name) {
-   
+   bookmark_file file;
+   if(file.is_open()) {
+      auto bookmarks = file.get_bookmark_list();
+      const std::string pwd = std::getenv("PWD");
+      
+      auto match_bookmark = [pwd, name](bookmark bm){ return name == bm.name || pwd == bm.path; };
+      const auto iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_bookmark);
+      
+      if(iter == bookmarks.end()) {
+         bookmarks.push_front({name, pwd});
+         file.save_bookmark_list(bookmarks);
+      } else if(iter->name == name) {
+         std::cout << "This bookmark name already exists:\n"
+            << "   " << iter->to_string() << "\n"
+            "Would you like to overwrite it (y/n)? ";
+            
+         const char response = std::cin.get();
+         if(response == 'y') {
+            iter->path = pwd;
+            bookmarks.splice(bookmarks.begin(), bookmarks, iter);
+            file.save_bookmark_list(bookmarks);
+         }
+      } else { // iter->path == pwd
+         std::cout << "This is already bookmarked under another name:\n"
+            << "   " << iter->to_string() << "\n"
+            "Would you like to change the name (y/n)? ";
+         
+         const char response = std::cin.get();
+         if(response == 'y') {
+            iter->name = name;
+            bookmarks.splice(bookmarks.begin(), bookmarks, iter);
+            file.save_bookmark_list(bookmarks);
+         }
+      }
+   }
 }
 
 void unfold(const std::string& name) {
