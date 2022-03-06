@@ -67,7 +67,9 @@ private:
 //Helpers
 //****
 bool valid_name(const std::string& bookmark) {
-   auto valid_char = [](char ch) { return std::isalnum(ch) || ch == '_' || ch == '-' || ch == '.'; };
+   auto valid_char = [](char ch) {
+      return std::isalnum(ch) || ch == '_' || ch == '-' || ch == '.';
+   };
    bool is_valid = 1 <= bookmark.size() && bookmark.size() <= 40
       && std::all_of(bookmark.begin(), bookmark.end(), valid_char);
    
@@ -131,6 +133,7 @@ Project can be found here: (Github Link)
 )~";
 }
 
+//Add a bookmark that points to the current directory
 void fold(const std::string& name) {
    bookmark_file file;
    if(file.is_open()) {
@@ -138,31 +141,34 @@ void fold(const std::string& name) {
       const auto path = std::filesystem::current_path();
       
       const auto match_bookmark = [path, name](bookmark bm){ return name == bm.name || path.string() == bm.path; };
-      const auto iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_bookmark);
+      const auto match_iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_bookmark);
       
-      if(iter == bookmarks.end()) {
+      //Case 1: No matching name or paths in bookmark list
+      if(match_iter == bookmarks.end()) {
          bookmarks.push_front({name, path.string()});
          file.save_bookmark_list(bookmarks);
-      } else if(iter->name == name) {
-         std::cout << "This bookmark name already exists:\n"
-            << "   " << iter->to_string() << "\n"
+      } else if(match_iter->name == name) {
+      //Case 2: Matching name in bookmark list
+         std::cout << "This name already points to another directory:\n"
+            << "   " << match_iter->to_string() << "\n"
             "Would you like to overwrite it (y/n)? ";
             
          const char response = std::cin.get();
          if(response == 'y') {
-            iter->path = path.string();
-            bookmarks.splice(bookmarks.begin(), bookmarks, iter);
+            match_iter->path = path.string();
+            bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
             file.save_bookmark_list(bookmarks);
          }
-      } else { // iter->path == pwd
+      } else { // match_iter->path == pwd
+      //Case 3: Matching path in bookmark list
          std::cout << "This is already bookmarked under another name:\n"
-            << "   " << iter->to_string() << "\n"
+            << "   " << match_iter->to_string() << "\n"
             "Would you like to change the name (y/n)? ";
          
          const char response = std::cin.get();
          if(response == 'y') {
-            iter->name = name;
-            bookmarks.splice(bookmarks.begin(), bookmarks, iter);
+            match_iter->name = name;
+            bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
             file.save_bookmark_list(bookmarks);
          }
       }
@@ -171,6 +177,7 @@ void fold(const std::string& name) {
    }
 }
 
+//Remove the bookmark that points to the current directory
 void unfold() {
    bookmark_file file;
    if(file.is_open()) {
@@ -178,13 +185,13 @@ void unfold() {
       const auto path = std::filesystem::current_path();
       
       const auto match_directory = [path](bookmark bm){ return path.string() == bm.path; };
-      const auto iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_directory);
+      const auto match_iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_directory);
       
-      if(iter == bookmarks.end()) {
+      if(match_iter == bookmarks.end()) {
          std::cout << "This directory hasn't been bookmarked\n";
       } else {
-         std::cout << "Unfolded bookmark: " << iter->name << '\n';
-         bookmarks.erase(iter);
+         std::cout << "Unfolded bookmark: " << match_iter->name << '\n';
+         bookmarks.erase(match_iter);
          file.save_bookmark_list(bookmarks);
       }
    } else {
@@ -192,63 +199,67 @@ void unfold() {
    }
 }
 
+//Finds a bookmark by name or returns an empty string
 void find(const std::string& name) {
    bookmark_file file;
    if(file.is_open()) {
       auto bookmarks = file.get_bookmark_list();
 
       const auto match_name = [name](bookmark bm){ return name == bm.name; };
-      const auto iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_name);
+      const auto match_iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_name);
       
-      if(iter != bookmarks.end()) {
-         std::cout << iter->name;
-         bookmarks.splice(bookmarks.begin(), bookmarks, iter);
+      if(match_iter != bookmarks.end()) {
+         std::cout << match_iter->path;
+         bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
          file.save_bookmark_list(bookmarks);
       }
    }
    std::cout << '\n';
 }
 
+//Returns n recently used bookmarks starting with the most recent
 void recent(const int n = 10) {
    bookmark_file file;
    if(file.is_open()) {
       const auto bookmarks = file.get_bookmark_list();
       std::cout << "Recently Used Bookmarks:\n";
 
-      auto iter = bookmarks.begin();
-      for(size_t i = 1; i <= n && iter != bookmarks.end(); ++i, ++iter) {
-         std::cout << i << ") " << iter->to_string() << '\n';
+      auto match_iter = bookmarks.begin();
+      for(size_t i = 1; i <= n && match_iter != bookmarks.end(); ++i, ++match_iter) {
+         std::cout << i << ") " << match_iter->to_string() << '\n';
       }
    } else {
       std::cout << "Couldn't open bookmark list\n";
    }
 }
 
+//Go through bookmarks one by one deleting those that are now unnecessary
 void edit() {
 //   bookmark_file file;
 //   if(file.is_open()) {
 //      auto bookmarks = file.get_bookmark_list();
 //
 //      auto match_name = [name](bookmark bm){ return name == bm.name; };
-//      const auto iter = std::find(bookmarks.begin(), bookmarks.end(), match_name);
-//      if(iter != bookmarks.end()) {
+//      const auto match_iter = std::find(bookmarks.begin(), bookmarks.end(), match_name);
+//      if(match_iter != bookmarks.end()) {
 //         std::cout << "Unknown bookmark: " << name << '\n';
-//      } else if(flip(iter->path)) {
-//         std::cout << "Flipped the page to: " << iter->to_string() << '\n';
+//      } else if(flip(match_iter->path)) {
+//         std::cout << "Flipped the page to: " << match_iter->to_string() << '\n';
 //      } else {
-//         std::cout << "Unable to flip to: " << iter->to_string() << '\n';
+//         std::cout << "Unable to flip to: " << match_iter->to_string() << '\n';
 //
 //         std::cout << "Delete this bookmark (y/n)? ";
 //         char response = std::cin.get();
 //         if(response == 'y') {
-//            bookmarks.erase(iter);
+//            bookmarks.erase(match_iter);
 //            file.save_bookmark_list(bookmarks);
-//            std::cout << iter->name << " has been deleted\n";
+//            std::cout << match_iter->name << " has been deleted\n";
 //         }
 //      }
 //   }
 }
 
+//Removes all bookmarks pointing to nonexistent directories
 void clean() {
    bookmark_file file;
    if(file.is_open()) {
@@ -266,6 +277,9 @@ void clean() {
    }
 }
 
+//****
+//main
+//****
 int main(const int argc, const char * argv[]) {
    if (argc < 2) {
       help();
