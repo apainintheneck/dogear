@@ -17,7 +17,7 @@ struct bookmark {
    std::string path;
    
    std::string to_string() const {
-      return name + " = " + path;
+      return "'" + name + "' = " + path;
    }
 };
 using bookmark_list = std::list<bookmark>;
@@ -28,7 +28,7 @@ public:
       std::filesystem::path path = std::getenv("HOME");
       const std::string filename = ".dogear_store";
       path /= filename;
-      file_.open(path, std::ios::in | std::ios::out | std::ios::trunc);
+      file_.open(path);
    }
    
    ~bookmark_file() {
@@ -145,19 +145,23 @@ void fold(const std::string& name) {
       
       //Case 1: No matching name or paths in bookmark list
       if(match_iter == bookmarks.end()) {
-         bookmarks.push_front({name, path.string()});
+         bookmark new_bookmark = {name, path.string()};
+         bookmarks.push_front(new_bookmark);
          file.save_bookmark_list(bookmarks);
+         std::cout << "Added bookmark to: " << new_bookmark.to_string() << '\n';
       } else if(match_iter->name == name) {
       //Case 2: Matching name in bookmark list
          std::cout << "This name already points to another directory:\n"
             << "   " << match_iter->to_string() << "\n"
             "Would you like to overwrite it (y/n)? ";
             
-         const char response = std::cin.get();
-         if(response == 'y') {
+         std::string response;
+         std::getline(std::cin, response);
+         if(response == "y") {
             match_iter->path = path.string();
             bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
             file.save_bookmark_list(bookmarks);
+            std::cout << "Overwritten to: " << match_iter->to_string() << '\n';
          }
       } else { // match_iter->path == pwd
       //Case 3: Matching path in bookmark list
@@ -165,11 +169,13 @@ void fold(const std::string& name) {
             << "   " << match_iter->to_string() << "\n"
             "Would you like to change the name (y/n)? ";
          
-         const char response = std::cin.get();
-         if(response == 'y') {
+         std::string response;
+         std::getline(std::cin, response);
+         if(response == "y") {
             match_iter->name = name;
             bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
             file.save_bookmark_list(bookmarks);
+            std::cout << "Overwritten to: " << match_iter->to_string() << '\n';
          }
       }
    } else {
@@ -246,13 +252,14 @@ void edit() {
          std::cout << "\nBookmark: " << iter->to_string() << "\n"
             "Delete this bookmark (y/n)? ";
          
-         char response = std::cin.get();
-         if(response == 'y') {
+         std::string response;
+         std::getline(std::cin, response);
+         if(response == "y") {
          //Case 1: Yes
             iter = bookmarks.erase(iter);
             did_edit = true;
             std::cout << iter->name << " has been deleted\n";
-         } else if(response == 'q'){
+         } else if(response == "q"){
          //Case 2: Quit
             break;
          } else {
