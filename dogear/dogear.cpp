@@ -66,17 +66,17 @@ private:
 //****
 //Helpers
 //****
-bool valid_name(const std::string& bookmark) {
+bool valid_name(const std::string& name) {
    auto valid_char = [](char ch) {
       return std::isalnum(ch) || ch == '_' || ch == '-' || ch == '.';
    };
-   bool is_valid = 1 <= bookmark.size() && bookmark.size() <= 40
-      && std::all_of(bookmark.begin(), bookmark.end(), valid_char);
+   bool is_valid = 1 <= name.size() && name.size() <= 40
+      && std::all_of(name.begin(), name.end(), valid_char);
    
    if(is_valid) {
       return true;
    } else {
-      std::cout << "Invalid bookmark name: " << bookmark << "\n\n"
+      std::cout << "Invalid bookmark name: " << name << "\n\n"
          "Valid bookmark names must be have 1-40 characters\n"
          "and can only contain the following:\n"
          "   [a-zA-z0-9] alphanumeric characters\n"
@@ -267,19 +267,19 @@ void edit() {
    }
 }
 
-//Removes all bookmarks pointing to nonexistent directories
+//Removes all bookmarks with invalid names or that point to nonexistent directories
 void clean() {
    bookmark_file file;
    if(file.is_open()) {
       auto bookmarks = file.get_bookmark_list();
       
       std::error_code err;
-      const auto nonexistent_path = [&err](bookmark bm){
-         return !std::filesystem::is_directory(bm.path, err);
+      const auto is_invalid = [&err](bookmark bm){
+         return !(valid_name(bm.name) && std::filesystem::is_directory(bm.path, err));
       };
-      bookmarks.remove_if(nonexistent_path);
+      bookmarks.remove_if(is_invalid);
       
-      std::cout << "Cleaned nonexistent directories from bookmark list\n";
+      std::cout << "Cleaned invalid bookmarks from bookmark list\n";
    } else {
       std::cout << "Couldn't open bookmark list\n";
    }
