@@ -235,28 +235,36 @@ void recent(const int n = 10) {
 
 //Go through bookmarks one by one deleting those that are now unnecessary
 void edit() {
-//   bookmark_file file;
-//   if(file.is_open()) {
-//      auto bookmarks = file.get_bookmark_list();
-//
-//      auto match_name = [name](bookmark bm){ return name == bm.name; };
-//      const auto match_iter = std::find(bookmarks.begin(), bookmarks.end(), match_name);
-//      if(match_iter != bookmarks.end()) {
-//         std::cout << "Unknown bookmark: " << name << '\n';
-//      } else if(flip(match_iter->path)) {
-//         std::cout << "Flipped the page to: " << match_iter->to_string() << '\n';
-//      } else {
-//         std::cout << "Unable to flip to: " << match_iter->to_string() << '\n';
-//
-//         std::cout << "Delete this bookmark (y/n)? ";
-//         char response = std::cin.get();
-//         if(response == 'y') {
-//            bookmarks.erase(match_iter);
-//            file.save_bookmark_list(bookmarks);
-//            std::cout << match_iter->name << " has been deleted\n";
-//         }
-//      }
-//   }
+   bookmark_file file;
+   if(file.is_open()) {
+      auto bookmarks = file.get_bookmark_list();
+      std::cout << "Editing bookmarks:\n"
+      "-Note: Press (q) at any time to quit\n";
+      
+      bool did_edit = false;
+      for(auto iter = bookmarks.begin(); iter != bookmarks.end();) {
+         std::cout << "\nBookmark: " << iter->to_string() << "\n"
+            "Delete this bookmark (y/n)? ";
+         
+         char response = std::cin.get();
+         if(response == 'y') {
+         //Case 1: Yes
+            iter = bookmarks.erase(iter);
+            did_edit = true;
+            std::cout << iter->name << " has been deleted\n";
+         } else if(response == 'q'){
+         //Case 2: Quit
+            break;
+         } else {
+         //Case 3: Continue
+            ++iter;
+         }
+      }
+      
+      if(did_edit) {
+         file.save_bookmark_list(bookmarks);
+      }
+   }
 }
 
 //Removes all bookmarks pointing to nonexistent directories
