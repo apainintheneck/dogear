@@ -202,7 +202,7 @@ void recent(const int n = 10) {
    std::cout << "Recently Used Bookmarks:\n";
 
    auto match_iter = bookmarks.begin();
-   for(size_t i = 1; i <= n && match_iter != bookmarks.end(); ++i, ++match_iter) {
+   for(int i = 1; i <= n && match_iter != bookmarks.end(); ++i, ++match_iter) {
       std::cout << i << ") " << match_iter->to_string() << '\n';
    }
 }
