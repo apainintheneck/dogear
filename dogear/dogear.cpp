@@ -27,7 +27,7 @@ namespace bookmark_file {
 
    bookmark_list get_bookmark_list() {
       std::ifstream infile(filepath);
-      if(!infile.is_open()) return {}; //Todo: Raise error
+      if(!infile.is_open()) return {};
       
       bookmark_list bookmarks;
       
@@ -190,11 +190,10 @@ void find(const std::string& name) {
    const auto match_iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_name);
    
    if(match_iter != bookmarks.end()) {
-      std::cout << match_iter->path;
+      std::cout << match_iter->path << '\n';
       bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
       bookmark_file::save_bookmark_list(bookmarks);
    }
-   std::cout << '\n';
 }
 
 //Returns n recently used bookmarks starting with the most recent
