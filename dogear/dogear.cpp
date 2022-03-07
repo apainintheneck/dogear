@@ -93,6 +93,9 @@ To change to a bookmarked directory type:
 `dogear` [`help`]:
 Displays this page.
 
+`dogear recent`:
+Displays the 10 most recently accessed bookmarks.
+
 `dogear fold` (<bookmark name>):
 Creates a bookmark of the current working directory.
 
@@ -101,9 +104,6 @@ Removes the bookmark of the current working directory.
 
 `dogear find` (<bookmark name>):
 Returns the path associated with the bookmark or an empty string.
-
-`dogear recent`:
-Displays the 10 most recently accessed bookmarks.
 
 `dogear edit`:
 Allows you to edit your bookmarks one by one.
