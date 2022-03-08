@@ -63,7 +63,9 @@ RSpec.describe "integration tests: " do
         it "empty bookmark list" do
             fill_bookmark_list({})
             result = run_script("recent")
-            expect(result).to match_array(["No bookmarks have been added"])
+            expect(result).to match_array([
+                "No bookmarks have been added"
+            ])
         end
 
         it "full bookmark list" do
@@ -184,7 +186,9 @@ RSpec.describe "integration tests: " do
             ])
             # Check that bookmark list is empty
             result = run_script("recent")
-            expect(result).to match_array(["No bookmarks have been added"])
+            expect(result).to match_array([
+                "No bookmarks have been added"
+            ])
         end
     end
 
@@ -207,11 +211,123 @@ RSpec.describe "integration tests: " do
     end
 
     describe "edit command: " do
-    
+        it "no bookmarks to edit" do
+            fill_bookmark_list({})
+            result = run_script("edit")
+            expect(result).to match_array([
+                "There are no bookmarks to edit"
+            ])
+        end
+
+        it "don't delete anything" do
+            fill_bookmark_list({
+                first: "first_path",
+                second: "second_path",
+                third: "third_path"
+            })
+            # Look at but don't delete any bookmarks
+            result = run_script("edit", [
+                "n",
+                "sdfkjlsdjfsdkfj",
+                "y     "
+            ])
+            expect(result).to match_array([
+                "Editing Bookmarks:",
+                "-Note: Press (q) at any time to quit",
+                "",
+                "Bookmark: `first` -> first_path",
+                "Delete this bookmark (y/n)? ",
+                "Bookmark: `second` -> second_path",
+                "Delete this bookmark (y/n)? ",
+                "Bookmark: `third` -> third_path",
+                "Delete this bookmark (y/n)? "
+            ])
+            # Check to see that they're all still there
+            result = run_script("recent")
+            expect(result).to match_array([
+                "Recently Used Bookmarks:",
+                "1) `first` -> first_path",
+                "2) `second` -> second_path",
+                "3) `third` -> third_path"
+            ])
+        end
+
+        it "quit early" do
+            fill_bookmark_list({
+                first: "first_path",
+                second: "second_path",
+                third: "third_path"
+            })
+            # Quit editing session immediately
+            run_script("edit", ["q"])
+            # Check to see that they're all still there
+            result = run_script("recent")
+            expect(result).to match_array([
+                "Recently Used Bookmarks:",
+                "1) `first` -> first_path",
+                "2) `second` -> second_path",
+                "3) `third` -> third_path"
+            ])
+        end
+
+        it "delete all of them" do
+            fill_bookmark_list({
+                first: "first_path",
+                second: "second_path",
+                third: "third_path"
+            })
+            # Delete all of them
+            result = run_script("edit", ["y"] * 3)
+            expect(result).to match_array([
+                "Editing Bookmarks:",
+                "-Note: Press (q) at any time to quit",
+                "",
+                "Bookmark: `first` -> first_path",
+                "Delete this bookmark (y/n)? " \
+                "`first` has been deleted",
+                "",
+                "Bookmark: `second` -> second_path",
+                "Delete this bookmark (y/n)? " \
+                "`second` has been deleted",
+                "",
+                "Bookmark: `third` -> third_path",
+                "Delete this bookmark (y/n)? " \
+                "`third` has been deleted",
+            ])
+            # Check to see that they're all gone
+            result = run_script("recent")
+            expect(result).to match_array([
+                "No bookmarks have been added"
+            ])
+        end
     end
 
     describe "clean command: " do
-    
+        it "empty bookmark list" do
+            fill_bookmark_list({})
+            result = run_script("clean")
+            expect(result).to match_array([
+                "No bookmarks to clean"
+            ])
+        end
+
+        it "clean list of bookmarks to invalid directories" do
+            fill_bookmark_list({
+                first: "first_path",
+                second: "second_path",
+                third: "third_path"
+            })
+            # Remove invalid bookmarks
+            result = run_script("clean")
+            expect(result).to match_array([
+                "Cleaned invalid bookmarks from bookmark list"
+            ])
+            # Check to see that they're all gone
+            result = run_script("recent")
+            expect(result).to match_array([
+                "No bookmarks have been added"
+            ])
+        end
     end
 
     # Cleanup

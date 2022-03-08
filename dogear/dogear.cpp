@@ -191,32 +191,37 @@ void find(const std::string& name) {
 //Go through bookmarks one by one deleting those that are now unnecessary
 void edit() {
    auto bookmarks = bookmark_file::get_bookmark_list();
-   std::cout << "Editing bookmarks:\n"
-   "-Note: Press (q) at any time to quit\n";
-   
-   bool edit_flag = false;
-   for(auto iter = bookmarks.begin(); iter != bookmarks.end();) {
-      std::cout << "\nBookmark: " << iter->to_string() << "\n"
-         "Delete this bookmark (y/n)? ";
+
+   if(bookmarks.empty()) {
+      std::cout << "There are no bookmarks to edit\n";
+   } else {
+      std::cout << "Editing Bookmarks:\n"
+      "-Note: Press (q) at any time to quit\n";
       
-      std::string response;
-      std::getline(std::cin, response);
-      if(response == "y") {
-      //Case 1: Yes
-         std::cout << "'" << iter->name << "' has been deleted\n";
-         iter = bookmarks.erase(iter);
-         edit_flag = true;
-      } else if(response == "q"){
-      //Case 2: Quit
-         break;
-      } else {
-      //Case 3: Continue
-         ++iter;
+      bool edit_flag = false;
+      for(auto iter = bookmarks.begin(); iter != bookmarks.end();) {
+         std::cout << "\nBookmark: " << iter->to_string() << "\n"
+            "Delete this bookmark (y/n)? ";
+         
+         std::string response;
+         std::getline(std::cin, response);
+         if(response == "y") {
+         //Case 1: Yes
+            std::cout << "`" << iter->name << "` has been deleted\n";
+            iter = bookmarks.erase(iter);
+            edit_flag = true;
+         } else if(response == "q"){
+         //Case 2: Quit
+            break;
+         } else {
+         //Case 3: Continue
+            ++iter;
+         }
       }
-   }
-   
-   if(edit_flag) {
-      bookmark_file::save_bookmark_list(bookmarks);
+      
+      if(edit_flag) {
+         bookmark_file::save_bookmark_list(bookmarks);
+      }
    }
 }
 
@@ -224,14 +229,18 @@ void edit() {
 void clean() {
    auto bookmarks = bookmark_file::get_bookmark_list();
    
-   std::error_code err;
-   const auto is_invalid = [&err](bookmark bm){
-      return !(valid_name(bm.name) && std::filesystem::is_directory(bm.path, err));
-   };
-   bookmarks.remove_if(is_invalid);
-   
-   bookmark_file::save_bookmark_list(bookmarks);
-   std::cout << "Cleaned invalid bookmarks from bookmark list\n";
+   if(bookmarks.empty()) {
+      std::cout << "No bookmarks to clean\n";
+   } else {
+      std::error_code err; //Used for noexcept is_directory call
+      const auto is_invalid = [&err](bookmark bm){
+         return !(valid_name(bm.name) && std::filesystem::is_directory(bm.path, err));
+      };
+      bookmarks.remove_if(is_invalid);
+      
+      bookmark_file::save_bookmark_list(bookmarks);
+      std::cout << "Cleaned invalid bookmarks from bookmark list\n";
+   }
 }
 
 void help() {
