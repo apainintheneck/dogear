@@ -17,7 +17,7 @@ struct bookmark {
    std::string path;
    
    std::string to_string() const {
-      return "'" + name + "' -> " + path;
+      return "`" + name + "` -> " + path;
    }
 };
 using bookmark_list = std::list<bookmark>;
@@ -83,11 +83,11 @@ R"~(
 [dogear]
 --------
 Bookmark directories for easy access in the future.
-   
+
 To change to a bookmarked directory type:
 `flipto (<bookmark name>)`
-   
-   
+
+
 [dogear subcommands]
 --------------------
 `dogear` [`help`]:
@@ -110,7 +110,7 @@ Allows you to edit your bookmarks one by one.
 
 `dogear clean`:
 Removes bookmarks pointing to nonexistent directories.
-   
+
 
 [more information]
 ------------------
@@ -134,10 +134,12 @@ void fold(const std::string& name) {
       bookmarks.push_front(new_bookmark);
       bookmark_file::save_bookmark_list(bookmarks);
       std::cout << "Added bookmark to: " << new_bookmark.to_string() << '\n';
+   } else if(match_iter->name == name && match_iter->path == path.string()) {
+      std::cout << "This directory has already been bookmarked\n";
    } else if(match_iter->name == name) {
    //Case 2: Matching name in bookmark list
       std::cout << "This name already points to another directory:\n"
-         << "   " << match_iter->to_string() << "\n"
+         << "   " << match_iter->to_string() << "\n\n"
          "Would you like to overwrite it (y/n)? ";
          
       std::string response;
@@ -151,7 +153,7 @@ void fold(const std::string& name) {
    } else { // match_iter->path == pwd
    //Case 3: Matching path in bookmark list
       std::cout << "This is already bookmarked under another name:\n"
-         << "   " << match_iter->to_string() << "\n"
+         << "   " << match_iter->to_string() << "\n\n"
          "Would you like to change the name (y/n)? ";
       
       std::string response;
@@ -191,8 +193,12 @@ void find(const std::string& name) {
    
    if(match_iter != bookmarks.end()) {
       std::cout << match_iter->path << '\n';
-      bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
-      bookmark_file::save_bookmark_list(bookmarks);
+      
+      //Only reorder the list if bookmark isn't already at the front.
+      if(match_iter != bookmarks.begin()) {
+         bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
+         bookmark_file::save_bookmark_list(bookmarks);
+      }
    }
 }
 
