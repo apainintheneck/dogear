@@ -73,51 +73,37 @@ void invalid_name_info(const std::string& name) {
       "   [_.-] underscores, periods, and dashes\n";
 }
 
+void usage() {
+   std::cout <<
+R"~(Example usage:
+   dogear recent
+   dogear fold [BOOKMARK]
+   dogear unfold
+   dogear find [BOOKMARK]
+   dogear edit
+   dogear clean
+   dogear help
+)~";
+}
+
 
 //****
 //Commands
 //****
-void help() {
-   std::cout <<
-R"~(
-[dogear]
---------
-Bookmark directories for easy access in the future.
+//Returns n recently used bookmarks starting with the most recent
+void recent(const int n = 10) {
+   const auto bookmarks = bookmark_file::get_bookmark_list();
 
-To change to a bookmarked directory type:
-`flipto (<bookmark name>)`
+   if(bookmarks.empty()) {
+      std::cout << "No bookmarks have been added\n";
+   } else {
+      std::cout << "Recently Used Bookmarks:\n";
 
-
-[dogear subcommands]
---------------------
-`dogear` [`help`]:
-Displays this page.
-
-`dogear recent`:
-Displays the 10 most recently accessed bookmarks.
-
-`dogear fold` (<bookmark name>):
-Creates a bookmark of the current working directory.
-
-`dogear unfold`:
-Removes the bookmark of the current working directory.
-
-`dogear find` (<bookmark name>):
-Returns the path associated with the bookmark or an empty string.
-
-`dogear edit`:
-Allows you to edit your bookmarks one by one.
-
-`dogear clean`:
-Removes bookmarks pointing to nonexistent directories.
-
-
-[more information]
-------------------
-Bookmarks are stored in `~/dogear_store` file.
-Project can be found here: (Github Link)
-
-)~";
+      auto match_iter = bookmarks.begin();
+      for(int i = 1; i <= n && match_iter != bookmarks.end(); ++i, ++match_iter) {
+         std::cout << i << ") " << match_iter->to_string() << '\n';
+      }
+   }
 }
 
 //Add a bookmark that points to the current directory
@@ -125,7 +111,7 @@ void fold(const std::string& name) {
    auto bookmarks = bookmark_file::get_bookmark_list();
    const auto path = std::filesystem::current_path();
    
-   const auto match_bookmark = [path, name](bookmark bm){ return name == bm.name || path.string() == bm.path; };
+   const auto match_bookmark = [&path, &name](bookmark bm){ return name == bm.name || path.string() == bm.path; };
    const auto match_iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_bookmark);
    
    //Case 1: No matching name or paths in bookmark list
@@ -172,7 +158,7 @@ void unfold() {
    auto bookmarks = bookmark_file::get_bookmark_list();
    const auto path = std::filesystem::current_path();
    
-   const auto match_directory = [path](bookmark bm){ return path.string() == bm.path; };
+   const auto match_directory = [&path](bookmark bm){ return path.string() == bm.path; };
    const auto match_iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_directory);
    
    if(match_iter == bookmarks.end()) {
@@ -188,7 +174,7 @@ void unfold() {
 void find(const std::string& name) {
    auto bookmarks = bookmark_file::get_bookmark_list();
 
-   const auto match_name = [name](bookmark bm){ return name == bm.name; };
+   const auto match_name = [&name](bookmark bm){ return name == bm.name; };
    const auto match_iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_name);
    
    if(match_iter != bookmarks.end()) {
@@ -202,24 +188,13 @@ void find(const std::string& name) {
    }
 }
 
-//Returns n recently used bookmarks starting with the most recent
-void recent(const int n = 10) {
-   const auto bookmarks = bookmark_file::get_bookmark_list();
-   std::cout << "Recently Used Bookmarks:\n";
-
-   auto match_iter = bookmarks.begin();
-   for(int i = 1; i <= n && match_iter != bookmarks.end(); ++i, ++match_iter) {
-      std::cout << i << ") " << match_iter->to_string() << '\n';
-   }
-}
-
 //Go through bookmarks one by one deleting those that are now unnecessary
 void edit() {
    auto bookmarks = bookmark_file::get_bookmark_list();
    std::cout << "Editing bookmarks:\n"
    "-Note: Press (q) at any time to quit\n";
    
-   bool did_edit = false;
+   bool edit_flag = false;
    for(auto iter = bookmarks.begin(); iter != bookmarks.end();) {
       std::cout << "\nBookmark: " << iter->to_string() << "\n"
          "Delete this bookmark (y/n)? ";
@@ -230,7 +205,7 @@ void edit() {
       //Case 1: Yes
          std::cout << "'" << iter->name << "' has been deleted\n";
          iter = bookmarks.erase(iter);
-         did_edit = true;
+         edit_flag = true;
       } else if(response == "q"){
       //Case 2: Quit
          break;
@@ -240,7 +215,7 @@ void edit() {
       }
    }
    
-   if(did_edit) {
+   if(edit_flag) {
       bookmark_file::save_bookmark_list(bookmarks);
    }
 }
@@ -259,12 +234,52 @@ void clean() {
    std::cout << "Cleaned invalid bookmarks from bookmark list\n";
 }
 
+void help() {
+   std::cout <<
+R"~(
+[dogear]
+--------
+Bookmark directories for easy access in the future.
+
+To change to a bookmarked directory type:
+`flipto (<bookmark name>)`
+
+
+[dogear subcommands]
+--------------------
+`dogear recent`:
+Displays the 10 most recently accessed bookmarks.
+
+`dogear fold` (<bookmark name>):
+Creates a bookmark of the current working directory.
+
+`dogear unfold`:
+Removes the bookmark of the current working directory.
+
+`dogear find` (<bookmark name>):
+Returns the path associated with the bookmark or an empty string.
+
+`dogear edit`:
+Allows you to edit your bookmarks one by one.
+
+`dogear clean`:
+Removes bookmarks pointing to nonexistent directories.
+
+
+[more information]
+------------------
+Bookmarks are stored in `~/dogear_store` file.
+Project can be found here: (Github Link)
+
+)~";
+}
+
 //****
 //main
 //****
 int main(const int argc, const char * argv[]) {
    if (argc < 2) {
-      help();
+      usage();
    } else {
       const std::string cmd = argv[1];
       const std::string name = argc >= 3 ? argv[2] : "";
@@ -287,8 +302,10 @@ int main(const int argc, const char * argv[]) {
          edit();
       } else if(cmd == "clean") {
          clean();
-      } else {
+      } else if(cmd == "help") {
          help();
+      } else {
+         usage();
       }
    }
 }

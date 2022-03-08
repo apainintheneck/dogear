@@ -22,7 +22,8 @@ RSpec.describe "integration tests: " do
             # Read entire output
             raw_output = pipe.gets(nil)
         end
-        raw_output.split("\n")
+
+        raw_output ? raw_output.split("\n") : []
     end
 
     def fill_bookmark_list(bookmarks)
@@ -35,62 +36,34 @@ RSpec.describe "integration tests: " do
     end
 
     # Tests
-    describe "unknown or missing command: " do
-        help_output = [
-            "",
-            "[dogear]",
-            "--------",
-            "Bookmark directories for easy access in the future.",
-            "",
-            "To change to a bookmarked directory type:",
-            "`flipto (<bookmark name>)`",
-            "",
-            "",
-            "[dogear subcommands]",
-            "--------------------",
-            "`dogear` [`help`]:",
-            "Displays this page.",
-            "",
-            "`dogear recent`:",
-            "Displays the 10 most recently accessed bookmarks.",
-            "",
-            "`dogear fold` (<bookmark name>):",
-            "Creates a bookmark of the current working directory.",
-            "",
-            "`dogear unfold`:",
-            "Removes the bookmark of the current working directory.",
-            "",
-            "`dogear find` (<bookmark name>):",
-            "Returns the path associated with the bookmark or an empty string.",
-            "",
-            "`dogear edit`:",
-            "Allows you to edit your bookmarks one by one.",
-            "",
-            "`dogear clean`:",
-            "Removes bookmarks pointing to nonexistent directories.",
-            "",
-            "",
-            "[more information]",
-            "------------------",
-            "Bookmarks are stored in `~/dogear_store` file.",
-            "Project can be found here: (Github Link)"
-        ]
+    describe "usage: " do
+        usage = [
+            "Example usage:",
+            "   dogear recent",
+            "   dogear fold [BOOKMARK]",
+            "   dogear unfold",
+            "   dogear find [BOOKMARK]",
+            "   dogear edit",
+            "   dogear clean",
+            "   dogear help"
+        ].freeze
 
-        it "no command" do
+        it "missing command" do
             result = run_script("")
-            expect(result).to match_array(help_output)
-        end 
+            expect(result).to match_array(usage)
+        end
 
         it "unknown command" do
             result = run_script("unknown-command")
-            expect(result).to match_array(help_output)
+            expect(result).to match_array(usage)
         end
     end
 
     describe "`recent` command: " do
         it "empty bookmark list" do
+            fill_bookmark_list({})
             result = run_script("recent")
-            expect(result).to match_array(["Recently Used Bookmarks:"])
+            expect(result).to match_array(["No bookmarks have been added"])
         end
 
         it "full bookmark list" do
@@ -189,6 +162,56 @@ RSpec.describe "integration tests: " do
                 "Would you like to change the name (y/n)? "
             ])
         end
+    end
+
+    describe "unfold command: " do
+        it "current directory not bookmarked" do
+            fill_bookmark_list({})
+            result = run_script("unfold")
+            expect(result).to match_array([
+                "This directory hasn't been bookmarked"
+            ])
+        end
+
+        it "unfold bookmark" do
+            fill_bookmark_list({
+                nickname: Dir.pwd
+            })
+            # Unfold bookmark
+            result = run_script("unfold")
+            expect(result).to match_array([
+                "Unfolded bookmark: nickname"
+            ])
+            # Check that bookmark list is empty
+            result = run_script("recent")
+            expect(result).to match_array(["No bookmarks have been added"])
+        end
+    end
+
+    describe "find command: " do
+        it "no bookmark with that name exists" do
+            fill_bookmark_list({})
+            result = run_script("find first")
+            expect(result).to match_array([])
+        end
+
+        it "named bookmark does exist" do
+            fill_bookmark_list({
+                first: "first_path",
+                second: "second_path",
+                third: "third_path"
+            })
+            result = run_script("find first")
+            expect(result).to match_array(["first_path"])
+        end
+    end
+
+    describe "edit command: " do
+    
+    end
+
+    describe "clean command: " do
+    
     end
 
     # Cleanup
