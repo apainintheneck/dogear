@@ -8,7 +8,7 @@ RSpec.describe "integration tests: " do
     # Helpers
     def run_script(cmd, args=nil)
         raw_output = nil
-        IO.popen("./build/apps/dogear #{cmd}", "r+") do |pipe|
+        IO.popen("./build/bins/dogear #{cmd}", "r+") do |pipe|
             if args
                 args.each do |arg|
                     pipe.puts arg

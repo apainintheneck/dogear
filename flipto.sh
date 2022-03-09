@@ -1,4 +1,9 @@
-#!/bin/sh
+
+# Used with the dogear app to allow you to switch
+# to bookmarked directories.
+#
+# For more information: 
+# Github link
 
 flipto () {
     if [ "$#" -lt 1 ] || [ "$1" = "help" ]
@@ -12,7 +17,7 @@ flipto () {
         then
             cd "$bookmark" || exit
         else
-            echo "Unable to flip to bookmark: $bookmark"
+            echo "Unable to flip to bookmark: $1"
         fi
     fi
 }
