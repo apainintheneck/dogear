@@ -39,7 +39,7 @@ $(BIN_DIR)/$(TARGET): $(OBJECTS)
 
 -include $(DEPENDENCIES)
 
-.PHONY: all build clean debug release info install
+.PHONY: all build clean debug test release info install
 
 build:
 	@mkdir -p $(BIN_DIR)
@@ -47,6 +47,9 @@ build:
 
 debug: CXXFLAGS += -DDEBUG -g
 debug: all
+
+test:
+	bundle install && bundle exec rspec
 
 release: CXXFLAGS += -O2
 release: all
