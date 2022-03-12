@@ -1,5 +1,8 @@
 # **dogear** - a command line directory bookmark utility
 
+## Requirements
+A *nix system with a C++17 compiler.
+
 ## Reason for existing
 A lot of the time I find that I want to jump directly to a specific folder or subdirectory and the cd command requires me to write out the whole path which is a bit time consuming and the path can be hard to remember at times.
 
@@ -7,7 +10,22 @@ A lot of the time I find that I want to jump directly to a specific folder or su
 A command line utility where you can bookmark directories and then access them using that nickname. It also saves the most recently accessed directories. Essentially the whole bookmark list is ordered by the most recently accessed bookmark. There is also a shell function used to change directories which calls the main program.
 
 ### Note
-Where I'm from we call the act of folding the corner of a page in a book to save your place dogearing it because it looks a bit like a dog's ear. Also, this program as currently built only works on *nix operating systems.
+Where I'm from we call the act of folding the corner of a page in a book to save your place dogearing it because it looks a bit like a dog's ear.
+
+## Example Usage
+```shell
+$ pwd
+/Users/username
+$ cd Desktop/projects/
+$ dogear fold projects
+Added bookmark to: `projects` -> /Users/username/Desktop/projects
+$ cd
+$ pwd
+/Users/username
+$ flipto projects
+$ pwd
+/Users/username/Desktop/projects
+```
 
 ## Commands
 
