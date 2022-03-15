@@ -1,23 +1,20 @@
-
 # Used with the dogear app to allow you to switch
 # to bookmarked directories.
 #
 # For more information: 
 # https://github.com/apainintheneck/dogear
 
-flipto () {
-    if [ "$#" -lt 1 ] || [ "$1" = "help" ]
-    then
+function flipto
+    if test (count $argv) -lt 1; or test $argv[1] = "help"
         echo "Usage: flipto <bookmark>"
         echo "For more information type:"
         echo "   dogear help"
     else
-        bookmark=$(dogear find "$1")
-        if [ "$bookmark" ]
-        then
+        set bookmark $(dogear find "$argv[1]")
+        if test "$bookmark"
             cd "$bookmark" || exit
         else
-            echo "Unable to flip to bookmark: $1"
-        fi
-    fi
-}
+            echo "Unable to flip to bookmark: $argv[1]"
+        end
+    end
+end

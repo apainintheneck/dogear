@@ -278,7 +278,7 @@ Removes bookmarks pointing to nonexistent directories.
 [more information]
 ------------------
 Bookmarks are stored in `~/dogear_store` file.
-Project can be found here: (Github Link)
+Project can be found here: https://github.com/apainintheneck/dogear
 
 )~";
 }
