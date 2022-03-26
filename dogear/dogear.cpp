@@ -23,35 +23,37 @@ struct bookmark {
 using bookmark_list = std::list<bookmark>;
 
 namespace bookmark_file {
-   static const std::string filepath = std::getenv("HOME") + std::string("/.dogear_store");
 
-   bookmark_list get_bookmark_list() {
-      std::ifstream infile(filepath);
-      if(!infile.is_open()) return {};
-      
-      bookmark_list bookmarks;
-      
-      std::string name, path;
-      while(std::getline(infile, name, '=')) {
-         if(std::getline(infile, path)) {
-            bookmarks.push_back({name, path});
-         } else {
-            break;
-         }
-      }
-      
-      return bookmarks;
-   }
+static const std::string filepath = std::getenv("HOME") + std::string("/.dogear_store");
 
-   void save_bookmark_list(const bookmark_list& bookmarks) {
-      std::ofstream outfile(filepath);
-      if(!outfile.is_open()) return; //Todo: Raise error
-      
-      for(const auto& bookmark : bookmarks) {
-         outfile << bookmark.name << '=' << bookmark.path << '\n';
+bookmark_list get() {
+   std::ifstream infile(filepath);
+   if(!infile.is_open()) return {};
+   
+   bookmark_list bookmarks;
+   
+   std::string name, path;
+   while(std::getline(infile, name, '=')) {
+      if(std::getline(infile, path)) {
+         bookmarks.push_back({name, path});
+      } else {
+         break;
       }
    }
-};
+   
+   return bookmarks;
+}
+
+void save(const bookmark_list& bookmarks) {
+   std::ofstream outfile(filepath);
+   if(!outfile.is_open()) return; //Todo: Raise error
+   
+   for(const auto& bookmark : bookmarks) {
+      outfile << bookmark.name << '=' << bookmark.path << '\n';
+   }
+}
+
+} //namespace bookmark_file
 
 
 //****
@@ -92,7 +94,7 @@ R"~(Example usage:
 //****
 //Returns n recently used bookmarks starting with the most recent
 void recent(const int n = 10) {
-   const auto bookmarks = bookmark_file::get_bookmark_list();
+   const auto bookmarks = bookmark_file::get();
 
    if(bookmarks.empty()) {
       std::cout << "No bookmarks have been added\n";
@@ -108,22 +110,25 @@ void recent(const int n = 10) {
 
 //Add a bookmark that points to the current directory
 void fold(const std::string& name) {
-   auto bookmarks = bookmark_file::get_bookmark_list();
+   auto bookmarks = bookmark_file::get();
    const auto path = std::filesystem::current_path();
    
    const auto match_bookmark = [&path, &name](bookmark bm){ return name == bm.name || path.string() == bm.path; };
    const auto match_iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_bookmark);
    
-   //Case 1: No matching name or paths in bookmark list
    if(match_iter == bookmarks.end()) {
+      //Case 1: No matching name or paths in bookmark list
       bookmark new_bookmark = {name, path.string()};
       bookmarks.push_front(new_bookmark);
-      bookmark_file::save_bookmark_list(bookmarks);
+      bookmark_file::save(bookmarks);
       std::cout << "Added bookmark to: " << new_bookmark.to_string() << '\n';
    } else if(match_iter->name == name && match_iter->path == path.string()) {
+      //Case 2: This exact bookmark already exists
       std::cout << "This directory has already been bookmarked\n";
+      bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
+      bookmark_file::save(bookmarks);
    } else if(match_iter->name == name) {
-   //Case 2: Matching name in bookmark list
+      //Case 3: Matching name in bookmark list
       std::cout << "This name already points to another directory:\n"
          << "   " << match_iter->to_string() << "\n\n"
          "Would you like to overwrite it (y/n)? ";
@@ -133,7 +138,7 @@ void fold(const std::string& name) {
       if(response == "y") {
          match_iter->path = path.string();
          bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
-         bookmark_file::save_bookmark_list(bookmarks);
+         bookmark_file::save(bookmarks);
          std::cout << "Overwritten to: " << match_iter->to_string() << '\n';
       }
    } else { // match_iter->path == pwd
@@ -147,7 +152,7 @@ void fold(const std::string& name) {
       if(response == "y") {
          match_iter->name = name;
          bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
-         bookmark_file::save_bookmark_list(bookmarks);
+         bookmark_file::save(bookmarks);
          std::cout << "Overwritten to: " << match_iter->to_string() << '\n';
       }
    }
@@ -155,7 +160,7 @@ void fold(const std::string& name) {
 
 //Remove the bookmark that points to the current directory
 void unfold() {
-   auto bookmarks = bookmark_file::get_bookmark_list();
+   auto bookmarks = bookmark_file::get();
    const auto path = std::filesystem::current_path();
    
    const auto match_directory = [&path](bookmark bm){ return path.string() == bm.path; };
@@ -166,13 +171,13 @@ void unfold() {
    } else {
       std::cout << "Unfolded bookmark: " << match_iter->name << '\n';
       bookmarks.erase(match_iter);
-      bookmark_file::save_bookmark_list(bookmarks);
+      bookmark_file::save(bookmarks);
    }
 }
 
 //Finds a bookmark by name or returns an empty string
 void find(const std::string& name) {
-   auto bookmarks = bookmark_file::get_bookmark_list();
+   auto bookmarks = bookmark_file::get();
 
    const auto match_name = [&name](bookmark bm){ return name == bm.name; };
    const auto match_iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_name);
@@ -183,14 +188,14 @@ void find(const std::string& name) {
       //Only reorder the list if bookmark isn't already at the front.
       if(match_iter != bookmarks.begin()) {
          bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
-         bookmark_file::save_bookmark_list(bookmarks);
+         bookmark_file::save(bookmarks);
       }
    }
 }
 
 //Go through bookmarks one by one deleting those that are now unnecessary
 void edit() {
-   auto bookmarks = bookmark_file::get_bookmark_list();
+   auto bookmarks = bookmark_file::get();
 
    if(bookmarks.empty()) {
       std::cout << "There are no bookmarks to edit\n";
@@ -220,14 +225,14 @@ void edit() {
       }
       
       if(edit_flag) {
-         bookmark_file::save_bookmark_list(bookmarks);
+         bookmark_file::save(bookmarks);
       }
    }
 }
 
 //Removes all bookmarks with invalid names or that point to nonexistent directories
 void clean() {
-   auto bookmarks = bookmark_file::get_bookmark_list();
+   auto bookmarks = bookmark_file::get();
    
    if(bookmarks.empty()) {
       std::cout << "No bookmarks to clean\n";
@@ -238,7 +243,7 @@ void clean() {
       };
       bookmarks.remove_if(is_invalid);
       
-      bookmark_file::save_bookmark_list(bookmarks);
+      bookmark_file::save(bookmarks);
       std::cout << "Cleaned invalid bookmarks from bookmark list\n";
    }
 }
@@ -267,6 +272,9 @@ Removes the bookmark of the current working directory.
 
 `dogear find` (<bookmark name>):
 Returns the path associated with the bookmark or an empty string.
+
+`dogear like` (<search term>):
+Returns a list of bookmarks containing the search term.
 
 `dogear edit`:
 Allows you to edit your bookmarks one by one.
@@ -305,6 +313,8 @@ int main(const int argc, const char * argv[]) {
          unfold();
       } else if(cmd == "find") {
          find(name);
+      } else if(cmd == "like") {
+//         like(name);
       } else if(cmd == "recent") {
          recent();
       } else if(cmd == "edit") {
