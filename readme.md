@@ -40,16 +40,17 @@ $ pwd
 - `dogear fold <bookmark name>` --- Bookmark the current working directory. If nickname already in use, ask to overwrite. If directory already exists, ask to change nickname.
 - `dogear unfold` --- Fails if current working directory not found in bookmarks. Prints bookmark removed otherwise.
 - `dogear find <bookmark name>` --- Returns the directory associated with the bookmark or nothing. This is used by the flipto function.
+- `dogear like <search term>` --- Prints a list of bookmarks that include the search term in either the name or directory path.
 - `dogear edit` --- Goes through list of bookmarks and allows users to edit them one by one.
 - `dogear clean` --- Removes bookmarks with invalid names or that point to nonexistent directories.
 - `dogear help` --- Man page that explains how this little utility works.
 
 ## How it works
-The Dogear program manages the `~/.dogear_store` file where all of the bookmarks are stored. The Flipto shell function call Dogear and then changes the directory using the `cd` command.
+The Dogear program manages the `~/.dogear_store` file where all of the bookmarks are stored. The Flipto shell function calls Dogear and then changes to that directory using the `cd` command.
 
 ## Installation
 Clone the repository, type `make install` and follow the instuctions.
 
 ## Technical Details
 - Rspec is used for integration tests which can be found in the spec/ folder.
-- Run tests by typing `bundle install && bundle exec rspec`.
+- Run tests by typing `make test` for short or `bundle install && bundle exec rspec`.
