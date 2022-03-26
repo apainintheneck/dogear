@@ -43,6 +43,7 @@ RSpec.describe "integration tests: " do
             "   dogear fold [BOOKMARK]",
             "   dogear unfold",
             "   dogear find [BOOKMARK]",
+            "   dogear like [SEARCH TERM]",
             "   dogear edit",
             "   dogear clean",
             "   dogear help"
@@ -162,6 +163,40 @@ RSpec.describe "integration tests: " do
                 "   `nickname` -> #{Dir.pwd}",
                 "",
                 "Would you like to change the name (y/n)? "
+            ])
+        end
+    end
+
+    describe "like command: " do
+        it "empty search term" do
+            fill_bookmark_list({})
+            result = run_script("like ''")
+            expect(result).to match_array([
+                "Missing a valid search term"
+            ])
+        end
+
+        it "empty bookmark list" do
+            fill_bookmark_list({})
+            result = run_script("like path")
+            expect(result).to match_array([
+                "Bookmarks like `path`:",
+            ])
+        end
+
+        it "valid search term" do
+            fill_bookmark_list({
+                first_path: "first_path",
+                second: "second_path",
+                THIRD_PATH: "third",
+                fourth: "fourth_sendero"
+            })
+            result = run_script("like path")
+            expect(result).to match_array([
+                "Bookmarks like `path`:",
+                "*) `first_path` -> first_path",
+                "*) `second` -> second_path",
+                "*) `THIRD_PATH` -> third"
             ])
         end
     end

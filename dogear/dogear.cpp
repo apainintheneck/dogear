@@ -59,7 +59,7 @@ void save(const bookmark_list& bookmarks) {
 //****
 //Helpers
 //****
-bool valid_name(const std::string& name) {
+bool is_valid_name(const std::string& name) {
    auto valid_char = [](char ch) {
       return std::isalnum(ch) || ch == '_' || ch == '-' || ch == '.';
    };
@@ -75,6 +75,18 @@ void invalid_name_info(const std::string& name) {
       "   [_.-] underscores, periods, and dashes\n";
 }
 
+//A case insensitive alternative to std::string.find()
+bool includes(const std::string& to_search, const std::string& search_term) {
+   auto cmp_lowercase = [](char ch1, char ch2) {
+      return std::tolower(ch1) == std::tolower(ch2);
+   };
+   
+   auto iter = std::search(to_search.begin(), to_search.end(),
+                           search_term.begin(), search_term.end(),
+                           cmp_lowercase);
+   return iter != to_search.end();
+}
+
 void usage() {
    std::cout <<
 R"~(Example usage:
@@ -82,6 +94,7 @@ R"~(Example usage:
    dogear fold [BOOKMARK]
    dogear unfold
    dogear find [BOOKMARK]
+   dogear like [SEARCH TERM]
    dogear edit
    dogear clean
    dogear help
@@ -110,6 +123,11 @@ void recent(const int n = 10) {
 
 //Add a bookmark that points to the current directory
 void fold(const std::string& name) {
+   if(!is_valid_name(name)) {
+      invalid_name_info(name);
+      return;
+   }
+   
    auto bookmarks = bookmark_file::get();
    const auto path = std::filesystem::current_path();
    
@@ -193,6 +211,22 @@ void find(const std::string& name) {
    }
 }
 
+//Lists all bookmarks that contain the given string in order of most recently
+//accessed. It also ignores case and looks at names and directory paths.
+void like(const std::string& search_term) {
+   if(search_term.empty()) {
+      std::cout << "Missing a valid search term\n";
+      return;
+   }
+   
+   auto bookmarks = bookmark_file::get();
+   std::cout << "Bookmarks like `" << search_term << "`:\n";
+   for(const auto& bookmark: bookmarks) {
+      if(includes(bookmark.name, search_term) || includes(bookmark.path, search_term))
+         std::cout << "*) " << bookmark.to_string() << '\n';
+   }
+}
+
 //Go through bookmarks one by one deleting those that are now unnecessary
 void edit() {
    auto bookmarks = bookmark_file::get();
@@ -239,7 +273,7 @@ void clean() {
    } else {
       std::error_code err; //Used for noexcept is_directory call
       const auto is_invalid = [&err](bookmark bm){
-         return !(valid_name(bm.name) && std::filesystem::is_directory(bm.path, err));
+         return !(is_valid_name(bm.name) && std::filesystem::is_directory(bm.path, err));
       };
       bookmarks.remove_if(is_invalid);
       
@@ -299,22 +333,18 @@ int main(const int argc, const char * argv[]) {
       usage();
    } else {
       const std::string cmd = argv[1];
-      const std::string name = argc >= 3 ? argv[2] : "";
+      const std::string arg = argc >= 3 ? argv[2] : "";
       
       if(cmd == "help") {
          help();
       } else if(cmd == "fold") {
-         if(valid_name(name)) {
-            fold(name);
-         } else {
-            invalid_name_info(name);
-         }
+         fold(arg);
       } else if(cmd == "unfold") {
          unfold();
       } else if(cmd == "find") {
-         find(name);
+         find(arg);
       } else if(cmd == "like") {
-//         like(name);
+         like(arg);
       } else if(cmd == "recent") {
          recent();
       } else if(cmd == "edit") {
