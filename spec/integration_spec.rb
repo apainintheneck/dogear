@@ -1,14 +1,13 @@
 RSpec.describe "integration tests: " do
     # Setup
     before(:all) do
-        `make`
         `mv ~/.dogear_store ~/.dogear_store.tmp`
     end
 
     # Helpers
     def run_script(cmd, args=nil)
         raw_output = nil
-        IO.popen("./build/bins/dogear #{cmd}", "r+") do |pipe|
+        IO.popen("./bin/dogear #{cmd}", "r+") do |pipe|
             if args
                 args.each do |arg|
                     pipe.puts arg

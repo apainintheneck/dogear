@@ -13,61 +13,40 @@
 # **************************************************************
 #
 
-CXX      := -c++
+# Modified version of the above mentioned makefile template.
+
+CXX      := -g++
 CXXFLAGS := -pedantic-errors -Wall -Wextra -Werror -std=c++17
 LDFLAGS  := -L/usr/lib -lstdc++ -lm
-BUILD    := ./build
-OBJ_DIR  := $(BUILD)/objects
-BIN_DIR  := $(BUILD)/bins
 TARGET   := dogear
-INCLUDE  := -Iinclude/
-SRC      := $(wildcard dogear/*.cpp)
+BIN_DIR  := bin
+BIN 	 := $(BIN_DIR)/$(TARGET)
+SRC 	 := dogear/dogear.cpp
 
-OBJECTS  := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
-DEPENDENCIES \
-         := $(OBJECTS:.o=.d)
+.PHONY: all release clean test info install
 
-all: build $(BIN_DIR)/$(TARGET)
+all: $(BIN)
 
-$(OBJ_DIR)/%.o: %.cpp
-	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(INCLUDE) -c $< -MMD -o $@
-
-$(BIN_DIR)/$(TARGET): $(OBJECTS)
-	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) -o $(BIN_DIR)/$(TARGET) $^ $(LDFLAGS)
-
--include $(DEPENDENCIES)
-
-.PHONY: all build clean debug test release info install
-
-build:
+$(BIN): $(SRC)
 	@mkdir -p $(BIN_DIR)
-	@mkdir -p $(OBJ_DIR)
-
-debug: CXXFLAGS += -DDEBUG -g
-debug: all
-
-test:
-	bundle install && bundle exec rspec
+	$(CXX) $(CXXFLAGS) $(SRC) -o $(BIN) $(LDFLAGS)
 
 release: CXXFLAGS += -O2
 release: all
 
 clean:
-	-@rm -rvf $(OBJ_DIR)/*
-	-@rm -rvf $(BIN_DIR)/*
+	@rm -vrf $(BIN_DIR)
+
+test: all
+	bundle install && bundle exec rspec
 
 info:
-	@echo "[*] Binary dir:	${BIN_DIR}     "
-	@echo "[*] Object dir:      ${OBJ_DIR}     "
-	@echo "[*] Sources:         ${SRC}         "
-	@echo "[*] Objects:         ${OBJECTS}     "
-	@echo "[*] Dependencies:    ${DEPENDENCIES}"
+	@echo "[*] Binary:	    ${BIN}     "
+	@echo "[*] Sources:     ${SRC}    "
 
 install: release
 	@echo "[*] To install move the binary into your path:"
-	@echo "[*]    cp $(BIN_DIR)/$(TARGET) [PATH]"
+	@echo "[*]    cp $(BIN) [PATH]"
 	@echo "[*]"
 	@echo "[*] If you are using Bash or Zsh as your default shell,"
 	@echo "[*] add the contents of flipto.sh to your profile:"

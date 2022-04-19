@@ -53,4 +53,4 @@ Clone the repository, type `make install` and follow the instuctions.
 
 ## Technical Details
 - Rspec is used for integration tests which can be found in the `spec/` folder.
-- Run tests by typing `make test` for short or `bundle install && bundle exec rspec`.
+- Run tests by typing `make test`.
