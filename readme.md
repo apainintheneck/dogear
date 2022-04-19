@@ -52,5 +52,5 @@ The Dogear program manages the `~/.dogear_store` file where all of the bookmarks
 Clone the repository, type `make install` and follow the instuctions.
 
 ## Technical Details
-- Rspec is used for integration tests which can be found in the spec/ folder.
+- Rspec is used for integration tests which can be found in the `spec/` folder.
 - Run tests by typing `make test` for short or `bundle install && bundle exec rspec`.
