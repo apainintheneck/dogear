@@ -7,7 +7,9 @@
 #include <cstdlib>
 #include <filesystem>
 #include <system_error>
+#include "sysexits.h"
 
+int exit_code = EXIT_SUCCESS;
 
 //****
 //Data
@@ -28,7 +30,7 @@ static const std::string filepath = std::getenv("HOME") + std::string("/.dogear_
 
 bookmark_list get() {
    std::ifstream infile(filepath);
-   if(!infile.is_open()) return {};
+   if(not infile.is_open()) return {};
    
    bookmark_list bookmarks;
    
@@ -46,7 +48,10 @@ bookmark_list get() {
 
 void save(const bookmark_list& bookmarks) {
    std::ofstream outfile(filepath);
-   if(!outfile.is_open()) return; //Todo: Raise error
+   if(not outfile.is_open()) {
+      exit_code = EX_CANTCREAT;
+      return;
+   }
    
    for(const auto& bookmark : bookmarks) {
       outfile << bookmark.name << '=' << bookmark.path << '\n';
@@ -61,10 +66,10 @@ void save(const bookmark_list& bookmarks) {
 //****
 bool is_valid_name(const std::string& name) {
    auto valid_char = [](char ch) {
-      return std::isalnum(ch) || ch == '_' || ch == '-' || ch == '.';
+      return std::isalnum(ch) or ch == '_' or ch == '-' or ch == '.';
    };
-   return 1 <= name.size() && name.size() <= 40
-      && std::all_of(name.begin(), name.end(), valid_char);
+   return 1 <= name.size() and name.size() <= 40
+      and std::all_of(name.begin(), name.end(), valid_char);
 }
 
 void invalid_name_info(const std::string& name) {
@@ -115,7 +120,7 @@ void recent(const int n = 10) {
       std::cout << "Recently Used Bookmarks:\n";
 
       auto match_iter = bookmarks.begin();
-      for(int i = 1; i <= n && match_iter != bookmarks.end(); ++i, ++match_iter) {
+      for(int i = 1; i <= n and match_iter != bookmarks.end(); ++i, ++match_iter) {
          std::cout << i << ") " << match_iter->to_string() << '\n';
       }
    }
@@ -123,15 +128,16 @@ void recent(const int n = 10) {
 
 //Add a bookmark that points to the current directory
 void fold(const std::string& name) {
-   if(!is_valid_name(name)) {
+   if(not is_valid_name(name)) {
       invalid_name_info(name);
+      exit_code = EX_USAGE;
       return;
    }
    
    auto bookmarks = bookmark_file::get();
    const auto path = std::filesystem::current_path();
    
-   const auto match_bookmark = [&path, &name](bookmark bm){ return name == bm.name || path.string() == bm.path; };
+   const auto match_bookmark = [&path, &name](bookmark bm){ return name == bm.name or path.string() == bm.path; };
    const auto match_iter = std::find_if(bookmarks.begin(), bookmarks.end(), match_bookmark);
    
    if(match_iter == bookmarks.end()) {
@@ -140,7 +146,7 @@ void fold(const std::string& name) {
       bookmarks.push_front(new_bookmark);
       bookmark_file::save(bookmarks);
       std::cout << "Added bookmark to: " << new_bookmark.to_string() << '\n';
-   } else if(match_iter->name == name && match_iter->path == path.string()) {
+   } else if(match_iter->name == name and match_iter->path == path.string()) {
       //Case 2: This exact bookmark already exists
       std::cout << "This directory has already been bookmarked\n";
       bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
@@ -186,6 +192,7 @@ void unfold() {
    
    if(match_iter == bookmarks.end()) {
       std::cout << "This directory hasn't been bookmarked\n";
+      exit_code = EXIT_FAILURE;
    } else {
       std::cout << "Unfolded bookmark: " << match_iter->name << '\n';
       bookmarks.erase(match_iter);
@@ -193,7 +200,7 @@ void unfold() {
    }
 }
 
-//Finds a bookmark by name or returns an empty string
+//Finds a bookmark by name or returns an empty string.
 void find(const std::string& name) {
    auto bookmarks = bookmark_file::get();
 
@@ -208,7 +215,10 @@ void find(const std::string& name) {
          bookmarks.splice(bookmarks.begin(), bookmarks, match_iter);
          bookmark_file::save(bookmarks);
       }
+      return;
    }
+
+   exit_code = EXIT_FAILURE;
 }
 
 //Lists all bookmarks that contain the given string in order of most recently
@@ -216,15 +226,22 @@ void find(const std::string& name) {
 void like(const std::string& search_term) {
    if(search_term.empty()) {
       std::cout << "Missing a valid search term\n";
+      exit_code = EX_USAGE;
       return;
    }
    
    auto bookmarks = bookmark_file::get();
    std::cout << "Bookmarks like `" << search_term << "`:\n";
+
+   bool is_match = false;
    for(const auto& bookmark: bookmarks) {
-      if(includes(bookmark.name, search_term) || includes(bookmark.path, search_term))
+      if(includes(bookmark.name, search_term) or includes(bookmark.path, search_term)) {
          std::cout << "*) " << bookmark.to_string() << '\n';
+         is_match = true;
+      }
    }
+
+   if(not is_match) exit_code = EXIT_FAILURE;
 }
 
 //Go through bookmarks one by one deleting those that are now unnecessary
@@ -273,7 +290,7 @@ void clean() {
    } else {
       std::error_code err; //Used for noexcept is_directory call
       const auto is_invalid = [&err](bookmark bm){
-         return !(is_valid_name(bm.name) && std::filesystem::is_directory(bm.path, err));
+         return not (is_valid_name(bm.name) and std::filesystem::is_directory(bm.path, err));
       };
       bookmarks.remove_if(is_invalid);
       
@@ -331,6 +348,7 @@ Project can be found here: https://github.com/apainintheneck/dogear
 int main(const int argc, const char * argv[]) {
    if (argc < 2) {
       usage();
+      exit_code = EX_USAGE;
    } else {
       const std::string cmd = argv[1];
       const std::string arg = argc >= 3 ? argv[2] : "";
@@ -355,6 +373,9 @@ int main(const int argc, const char * argv[]) {
          help();
       } else {
          usage();
+         exit_code = EX_USAGE;
       }
    }
+
+   return exit_code;
 }
