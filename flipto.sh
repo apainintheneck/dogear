@@ -15,7 +15,11 @@ flipto () {
         bookmark=$(dogear find "$1")
         if [ "$bookmark" ]
         then
-            cd "$bookmark" || exit
+            cd "$bookmark"
+            if [ "$?" = 0 ] && [ "$#" -gt 1 ]
+            then
+                cd "$2"
+            fi
         else
             echo "Unable to flip to bookmark: $1"
         fi

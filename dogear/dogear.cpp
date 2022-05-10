@@ -305,9 +305,17 @@ R"~(
 [dogear]
 --------
 Bookmark directories for easy access in the future.
+Dogear manages bookmarks while flipto allows you to access them.
 
-To change to a bookmarked directory type:
-`flipto (<bookmark name>)`
+
+[flipto command]
+-----------------
+`flipto <bookmark name>`
+Flips to bookmarked directory if it exists.
+
+`flipto <bookmark name> [subdirectory]`
+Flips to bookmarked directory first and then
+attempts to flip to subdirectory.
 
 
 [dogear subcommands]
@@ -315,16 +323,16 @@ To change to a bookmarked directory type:
 `dogear recent`:
 Displays the 10 most recently accessed bookmarks.
 
-`dogear fold` (<bookmark name>):
+`dogear fold` <bookmark name>:
 Creates a bookmark of the current working directory.
 
 `dogear unfold`:
 Removes the bookmark of the current working directory.
 
-`dogear find` (<bookmark name>):
+`dogear find` <bookmark name>:
 Returns the path associated with the bookmark or an empty string.
 
-`dogear like` (<search term>):
+`dogear like` <search term>:
 Returns a list of bookmarks containing the search term.
 
 `dogear edit`:

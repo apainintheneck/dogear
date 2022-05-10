@@ -12,7 +12,10 @@ function flipto
     else
         set bookmark $(dogear find "$argv[1]")
         if test "$bookmark"
-            cd "$bookmark" || exit
+            cd "$bookmark"
+            if test $status = 0 ; and test (count $argv) -gt 1
+                cd "$argv[2]"
+            end
         else
             echo "Unable to flip to bookmark: $argv[1]"
         end
