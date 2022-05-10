@@ -1,4 +1,10 @@
 RSpec.describe "integration tests: " do
+    # Exit Codes
+    EXIT_SUCCESS = 0
+    EXIT_FAILURE = 1
+    EX_USAGE = 64
+    EX_CANTCREAT = 73
+
     # Setup
     before(:all) do
         `mv ~/.dogear_store ~/.dogear_store.tmp`
@@ -7,6 +13,7 @@ RSpec.describe "integration tests: " do
     # Helpers
     def run_script(cmd, args=nil)
         raw_output = nil
+        exit_code = 0
         IO.popen("./bin/dogear #{cmd}", "r+") do |pipe|
             if args
                 args.each do |arg|
@@ -17,12 +24,15 @@ RSpec.describe "integration tests: " do
             end
         
             pipe.close_write
-    
-            # Read entire output
             raw_output = pipe.gets(nil)
+            pipe.close
+            exit_code = $?.exitstatus
         end
 
-        raw_output ? raw_output.split("\n") : []
+        {
+            output: raw_output ? raw_output.split("\n") : [],
+            exit_code: exit_code,
+        }
     end
 
     def fill_bookmark_list(bookmarks)
@@ -50,12 +60,18 @@ RSpec.describe "integration tests: " do
 
         it "missing command" do
             result = run_script("")
-            expect(result).to match_array(usage)
+            expect(result).to eq({
+                output: usage,
+                exit_code: EX_USAGE,
+            })
         end
 
         it "unknown command" do
             result = run_script("unknown-command")
-            expect(result).to match_array(usage)
+            expect(result).to eq({
+                output: usage,
+                exit_code: EX_USAGE,
+            })
         end
     end
 
@@ -63,9 +79,10 @@ RSpec.describe "integration tests: " do
         it "empty bookmark list" do
             fill_bookmark_list({})
             result = run_script("recent")
-            expect(result).to match_array([
-                "No bookmarks have been added"
-            ])
+            expect(result).to eq({
+                output: ["No bookmarks have been added"],
+                exit_code: EXIT_SUCCESS,
+            })
         end
 
         it "full bookmark list" do
@@ -75,21 +92,25 @@ RSpec.describe "integration tests: " do
                 third: "third_path"
             })
             result = run_script("recent")
-            expect(result).to match_array([
-                "Recently Used Bookmarks:",
-                "1) `first` -> first_path",
-                "2) `second` -> second_path",
-                "3) `third` -> third_path"
-            ])
+            expect(result).to eq({
+                output: [
+                    "Recently Used Bookmarks:",
+                    "1) `first` -> first_path",
+                    "2) `second` -> second_path",
+                    "3) `third` -> third_path"
+                ],
+                exit_code: EXIT_SUCCESS,
+            })
         end
     end
 
     describe "`fold` command: " do
         it "add bookmark" do
             result = run_script("fold nickname")
-            expect(result).to match_array([
-                "Added bookmark to: `nickname` -> #{Dir.pwd}"
-            ])
+            expect(result).to eq({
+                output: ["Added bookmark to: `nickname` -> #{Dir.pwd}"],
+                exit_code: EXIT_SUCCESS,
+            })
         end
 
         it "fail to add bookmarks with invalid names" do
@@ -108,9 +129,10 @@ RSpec.describe "integration tests: " do
 
             invalid_names.each do |name|
                 result = run_script("fold #{name}")
-                expect(result).to match_array(
-                    invalid_name_output.call(name)
-                )
+                expect(result).to eq({
+                    output: invalid_name_output.call(name),
+                    exit_code: EX_USAGE,
+                })
             end
         end
 
@@ -119,9 +141,10 @@ RSpec.describe "integration tests: " do
                 nickname: Dir.pwd
             })
             result = run_script("fold nickname")
-            expect(result).to match_array([
-                "This directory has already been bookmarked"
-            ])
+            expect(result).to eq({
+                output: ["This directory has already been bookmarked"],
+                exit_code: EXIT_SUCCESS,
+            })
         end
 
         it "change directory pointed to by bookmark name" do
@@ -129,13 +152,16 @@ RSpec.describe "integration tests: " do
                 nickname: "other_directory"
             })
             result = run_script("fold nickname", ["y"])
-            expect(result).to match_array([
-                "This name already points to another directory:",
-                "   `nickname` -> other_directory",
-                "",
-                "Would you like to overwrite it (y/n)? " \
-                "Overwritten to: `nickname` -> #{Dir.pwd}"
-            ])
+            expect(result).to eq({
+                output: [
+                    "This name already points to another directory:",
+                    "   `nickname` -> other_directory",
+                    "",
+                    "Would you like to overwrite it (y/n)? " \
+                    "Overwritten to: `nickname` -> #{Dir.pwd}"
+                ],
+                exit_code: EXIT_SUCCESS,
+            })
         end
 
         it "change bookmark name for current directory" do
@@ -143,13 +169,16 @@ RSpec.describe "integration tests: " do
                 nickname: Dir.pwd
             })
             result = run_script("fold new_name", ["y"])
-            expect(result).to match_array([
-                "This is already bookmarked under another name:",
-                "   `nickname` -> #{Dir.pwd}",
-                "",
-                "Would you like to change the name (y/n)? " \
-                "Overwritten to: `new_name` -> #{Dir.pwd}"
-            ])
+            expect(result).to eq({
+                output: [
+                    "This is already bookmarked under another name:",
+                    "   `nickname` -> #{Dir.pwd}",
+                    "",
+                    "Would you like to change the name (y/n)? " \
+                    "Overwritten to: `new_name` -> #{Dir.pwd}"
+                ],
+                exit_code: EXIT_SUCCESS,
+            })
         end
 
         it "keep old bookmark name" do
@@ -157,12 +186,15 @@ RSpec.describe "integration tests: " do
                 nickname: Dir.pwd
             })
             result = run_script("fold new_name", ["n"])
-            expect(result).to match_array([
-                "This is already bookmarked under another name:",
-                "   `nickname` -> #{Dir.pwd}",
-                "",
-                "Would you like to change the name (y/n)? "
-            ])
+            expect(result).to eq({
+                output: [
+                    "This is already bookmarked under another name:",
+                    "   `nickname` -> #{Dir.pwd}",
+                    "",
+                    "Would you like to change the name (y/n)? "
+                ],
+                exit_code: EXIT_SUCCESS,
+            })
         end
     end
 
@@ -170,17 +202,19 @@ RSpec.describe "integration tests: " do
         it "empty search term" do
             fill_bookmark_list({})
             result = run_script("like ''")
-            expect(result).to match_array([
-                "Missing a valid search term"
-            ])
+            expect(result).to eq({
+                output: ["Missing a valid search term"],
+                exit_code: EX_USAGE,
+            })
         end
 
         it "empty bookmark list" do
             fill_bookmark_list({})
             result = run_script("like path")
-            expect(result).to match_array([
-                "Bookmarks like `path`:",
-            ])
+            expect(result).to eq({
+                output: ["Bookmarks like `path`:"],
+                exit_code: EXIT_FAILURE,
+            })
         end
 
         it "valid search term" do
@@ -191,12 +225,15 @@ RSpec.describe "integration tests: " do
                 fourth: "fourth_sendero"
             })
             result = run_script("like path")
-            expect(result).to match_array([
-                "Bookmarks like `path`:",
-                "*) `first_path` -> first_path",
-                "*) `second` -> second_path",
-                "*) `THIRD_PATH` -> third"
-            ])
+            expect(result).to eq({
+                output: [
+                    "Bookmarks like `path`:",
+                    "*) `first_path` -> first_path",
+                    "*) `second` -> second_path",
+                    "*) `THIRD_PATH` -> third"
+                ],
+                exit_code: EXIT_SUCCESS,
+            })
         end
     end
 
@@ -204,9 +241,10 @@ RSpec.describe "integration tests: " do
         it "current directory not bookmarked" do
             fill_bookmark_list({})
             result = run_script("unfold")
-            expect(result).to match_array([
-                "This directory hasn't been bookmarked"
-            ])
+            expect(result).to eq({
+                output: ["This directory hasn't been bookmarked"],
+                exit_code: EXIT_FAILURE,
+            })
         end
 
         it "unfold bookmark" do
@@ -215,14 +253,16 @@ RSpec.describe "integration tests: " do
             })
             # Unfold bookmark
             result = run_script("unfold")
-            expect(result).to match_array([
-                "Unfolded bookmark: nickname"
-            ])
+            expect(result).to eq({
+                output: ["Unfolded bookmark: nickname"],
+                exit_code: EXIT_SUCCESS,
+            })
             # Check that bookmark list is empty
             result = run_script("recent")
-            expect(result).to match_array([
-                "No bookmarks have been added"
-            ])
+            expect(result).to eq({
+                output: ["No bookmarks have been added"],
+                exit_code: EXIT_SUCCESS,
+            })
         end
     end
 
@@ -230,7 +270,10 @@ RSpec.describe "integration tests: " do
         it "no bookmark with that name exists" do
             fill_bookmark_list({})
             result = run_script("find first")
-            expect(result).to match_array([])
+            expect(result).to eq({
+                output: [],
+                exit_code: EXIT_FAILURE,
+            })
         end
 
         it "named bookmark does exist" do
@@ -240,7 +283,10 @@ RSpec.describe "integration tests: " do
                 third: "third_path"
             })
             result = run_script("find first")
-            expect(result).to match_array(["first_path"])
+            expect(result).to eq({
+                output: ["first_path"],
+                exit_code: EXIT_SUCCESS,
+            })
         end
     end
 
@@ -248,9 +294,10 @@ RSpec.describe "integration tests: " do
         it "no bookmarks to edit" do
             fill_bookmark_list({})
             result = run_script("edit")
-            expect(result).to match_array([
-                "There are no bookmarks to edit"
-            ])
+            expect(result).to eq({
+                output: ["There are no bookmarks to edit"],
+                exit_code: EXIT_SUCCESS,
+            })
         end
 
         it "don't delete anything" do
@@ -263,27 +310,33 @@ RSpec.describe "integration tests: " do
             result = run_script("edit", [
                 "n",
                 "sdfkjlsdjfsdkfj",
-                "y     "
+                "y     " # This does not equal "y"
             ])
-            expect(result).to match_array([
-                "Editing Bookmarks:",
-                "-Note: Press (q) at any time to quit",
-                "",
-                "Bookmark: `first` -> first_path",
-                "Delete this bookmark (y/n)? ",
-                "Bookmark: `second` -> second_path",
-                "Delete this bookmark (y/n)? ",
-                "Bookmark: `third` -> third_path",
-                "Delete this bookmark (y/n)? "
-            ])
+            expect(result).to eq({
+                output: [
+                    "Editing Bookmarks:",
+                    "-Note: Press (q) at any time to quit",
+                    "",
+                    "Bookmark: `first` -> first_path",
+                    "Delete this bookmark (y/n)? ",
+                    "Bookmark: `second` -> second_path",
+                    "Delete this bookmark (y/n)? ",
+                    "Bookmark: `third` -> third_path",
+                    "Delete this bookmark (y/n)? "
+                ],
+                exit_code: EXIT_SUCCESS,
+            })
             # Check to see that they're all still there
             result = run_script("recent")
-            expect(result).to match_array([
-                "Recently Used Bookmarks:",
-                "1) `first` -> first_path",
-                "2) `second` -> second_path",
-                "3) `third` -> third_path"
-            ])
+            expect(result).to eq({
+                output: [
+                    "Recently Used Bookmarks:",
+                    "1) `first` -> first_path",
+                    "2) `second` -> second_path",
+                    "3) `third` -> third_path"
+                ],
+                exit_code: EXIT_SUCCESS,
+            })
         end
 
         it "quit early" do
@@ -296,12 +349,15 @@ RSpec.describe "integration tests: " do
             run_script("edit", ["q"])
             # Check to see that they're all still there
             result = run_script("recent")
-            expect(result).to match_array([
-                "Recently Used Bookmarks:",
-                "1) `first` -> first_path",
-                "2) `second` -> second_path",
-                "3) `third` -> third_path"
-            ])
+            expect(result).to eq({
+                output: [
+                    "Recently Used Bookmarks:",
+                    "1) `first` -> first_path",
+                    "2) `second` -> second_path",
+                    "3) `third` -> third_path"
+                ],
+                exit_code: EXIT_SUCCESS,
+            })
         end
 
         it "delete all of them" do
@@ -312,27 +368,31 @@ RSpec.describe "integration tests: " do
             })
             # Delete all of them
             result = run_script("edit", ["y"] * 3)
-            expect(result).to match_array([
-                "Editing Bookmarks:",
-                "-Note: Press (q) at any time to quit",
-                "",
-                "Bookmark: `first` -> first_path",
-                "Delete this bookmark (y/n)? " \
-                "`first` has been deleted",
-                "",
-                "Bookmark: `second` -> second_path",
-                "Delete this bookmark (y/n)? " \
-                "`second` has been deleted",
-                "",
-                "Bookmark: `third` -> third_path",
-                "Delete this bookmark (y/n)? " \
-                "`third` has been deleted",
-            ])
+            expect(result).to eq({
+                output: [
+                    "Editing Bookmarks:",
+                    "-Note: Press (q) at any time to quit",
+                    "",
+                    "Bookmark: `first` -> first_path",
+                    "Delete this bookmark (y/n)? " \
+                    "`first` has been deleted",
+                    "",
+                    "Bookmark: `second` -> second_path",
+                    "Delete this bookmark (y/n)? " \
+                    "`second` has been deleted",
+                    "",
+                    "Bookmark: `third` -> third_path",
+                    "Delete this bookmark (y/n)? " \
+                    "`third` has been deleted",
+                ],
+                exit_code: EXIT_SUCCESS,
+            })
             # Check to see that they're all gone
             result = run_script("recent")
-            expect(result).to match_array([
-                "No bookmarks have been added"
-            ])
+            expect(result).to eq({
+                output: ["No bookmarks have been added"],
+                exit_code: EXIT_SUCCESS,
+            })
         end
     end
 
@@ -340,9 +400,10 @@ RSpec.describe "integration tests: " do
         it "empty bookmark list" do
             fill_bookmark_list({})
             result = run_script("clean")
-            expect(result).to match_array([
-                "No bookmarks to clean"
-            ])
+            expect(result).to eq({
+                output: ["No bookmarks to clean"],
+                exit_code: EXIT_SUCCESS,
+            })
         end
 
         it "clean list of bookmarks to invalid directories" do
@@ -353,14 +414,16 @@ RSpec.describe "integration tests: " do
             })
             # Remove invalid bookmarks
             result = run_script("clean")
-            expect(result).to match_array([
-                "Cleaned invalid bookmarks from bookmark list"
-            ])
+            expect(result).to eq({
+                output: ["Cleaned invalid bookmarks from bookmark list"],
+                exit_code: EXIT_SUCCESS,
+            })
             # Check to see that they're all gone
             result = run_script("recent")
-            expect(result).to match_array([
-                "No bookmarks have been added"
-            ])
+            expect(result).to eq({
+                output: ["No bookmarks have been added"],
+                exit_code: EXIT_SUCCESS,
+            })
         end
     end
 
