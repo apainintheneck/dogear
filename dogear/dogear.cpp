@@ -96,10 +96,10 @@ void usage() {
    std::cout <<
 R"~(Example usage:
    dogear recent
-   dogear fold [BOOKMARK]
+   dogear fold <bookmark>
    dogear unfold
-   dogear find [BOOKMARK]
-   dogear like [SEARCH TERM]
+   dogear find <bookmark>
+   dogear like <search term>
    dogear edit
    dogear clean
    dogear help
@@ -305,17 +305,17 @@ R"~(
 [dogear]
 --------
 Bookmark directories for easy access in the future.
-Dogear manages bookmarks while flipto allows you to access them.
+Dogear manages bookmarks while flipto allows you to move to them.
 
 
 [flipto command]
 -----------------
-`flipto <bookmark name>`
+`flipto <bookmark>`
 Flips to bookmarked directory if it exists.
 
-`flipto <bookmark name> [subdirectory]`
+`flipto <bookmark> [subdirectory]`
 Flips to bookmarked directory first and then
-attempts to flip to subdirectory.
+attempts to flip to the subdirectory.
 
 
 [dogear subcommands]
@@ -323,13 +323,13 @@ attempts to flip to subdirectory.
 `dogear recent`:
 Displays the 10 most recently accessed bookmarks.
 
-`dogear fold` <bookmark name>:
+`dogear fold` <bookmark>:
 Creates a bookmark of the current working directory.
 
 `dogear unfold`:
 Removes the bookmark of the current working directory.
 
-`dogear find` <bookmark name>:
+`dogear find` <bookmark>:
 Returns the path associated with the bookmark or an empty string.
 
 `dogear like` <search term>:

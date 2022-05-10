@@ -49,10 +49,10 @@ RSpec.describe "integration tests: " do
         usage = [
             "Example usage:",
             "   dogear recent",
-            "   dogear fold [BOOKMARK]",
+            "   dogear fold <bookmark>",
             "   dogear unfold",
-            "   dogear find [BOOKMARK]",
-            "   dogear like [SEARCH TERM]",
+            "   dogear find <bookmark>",
+            "   dogear like <search term>",
             "   dogear edit",
             "   dogear clean",
             "   dogear help"

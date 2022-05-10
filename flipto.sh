@@ -8,7 +8,7 @@
 flipto () {
     if [ "$#" -lt 1 ] || [ "$1" = "help" ]
     then
-        echo "Usage: flipto <bookmark>"
+        echo "Usage: flipto <bookmark> [subdirectory]"
         echo "For more information type:"
         echo "   dogear help"
     else

@@ -31,15 +31,16 @@ $ pwd
 
 ### Flipto
 #### A shell function that changes to the bookmarked directory.
-- `flipto <bookmark name>` --- Flips to directory if bookmark exists.
+- `flipto <bookmark>` --- Flips to directory if bookmark exists.
+- `flipto <bookmark> [subdirectory]` --- Flips to directory first and then changes to the subdirectory.
 - `flipto help` --- Small man page.
 
 ### Dogear
 #### The utility that manages all of the bookmarks.
 - `dogear recent` --- Displays ten most recently accessed bookmarks.
-- `dogear fold <bookmark name>` --- Bookmark the current working directory. If nickname already in use, ask to overwrite. If directory already exists, ask to change nickname.
+- `dogear fold <bookmark>` --- Bookmark the current working directory. If nickname already in use, ask to overwrite. If directory already exists, ask to change nickname.
 - `dogear unfold` --- Fails if current working directory not found in bookmarks. Prints bookmark removed otherwise.
-- `dogear find <bookmark name>` --- Returns the directory associated with the bookmark or nothing. This is used by the flipto function.
+- `dogear find <bookmark>` --- Returns the directory associated with the bookmark or nothing. This is used by the flipto function.
 - `dogear like <search term>` --- Prints a list of bookmarks that include the search term in either the name or directory path.
 - `dogear edit` --- Goes through list of bookmarks and allows users to edit them one by one.
 - `dogear clean` --- Removes bookmarks with invalid names or that point to nonexistent directories.

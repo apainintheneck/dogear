@@ -6,7 +6,7 @@
 
 function flipto
     if test (count $argv) -lt 1; or test $argv[1] = "help"
-        echo "Usage: flipto <bookmark>"
+        echo "Usage: flipto <bookmark> [subdirectory]"
         echo "For more information type:"
         echo "   dogear help"
     else
