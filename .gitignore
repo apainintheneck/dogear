@@ -41,3 +41,6 @@ bin/
 # XCode files
 *.xcodeproj/
 DerivedData/
+
+# VSCode files
+.vscode

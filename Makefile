@@ -23,7 +23,7 @@ BIN_DIR  := bin
 BIN 	 := $(BIN_DIR)/$(TARGET)
 SRC 	 := dogear/dogear.cpp
 
-.PHONY: all release clean test info install
+.PHONY: all release debug clean test info install
 
 all: $(BIN)
 
@@ -34,23 +34,27 @@ $(BIN): $(SRC)
 release: CXXFLAGS += -O2
 release: all
 
-clean:
-	@rm -vrf $(BIN_DIR)
+debug: CXXFLAGS += -g
+debug: all
 
-test: all
+clean:
+	rm -vrf $(BIN_DIR)
+
+test: debug
 	bundle install && bundle exec rspec
 
 info:
 	@echo "[*] Binary:	    ${BIN}     "
 	@echo "[*] Sources:     ${SRC}    "
 
-install: release
-	@echo "[*] To install move the binary into your path:"
-	@echo "[*]    cp $(BIN) [PATH]"
+install:
+	@echo "[*] To install build and move the binary into your path:"
+	@echo "[*]    make clean && make release"
+	@echo "[*]    cp $(BIN) <PATH>"
 	@echo "[*]"
 	@echo "[*] If you are using Bash or Zsh as your default shell,"
 	@echo "[*] add the contents of flipto.sh to your profile:"
-	@echo "[*]    cat flipto.sh >> [PROFILE]"
+	@echo "[*]    cat flipto.sh >> <PROFILE>"
 	@echo "[*] If you are using Fish as your default shell,"
 	@echo "[*] add the contents of flipto.fish to your functions folder:"
 	@echo "[*]    cp flipto.fish ~/.config/fish/functions/flipto.fish"
