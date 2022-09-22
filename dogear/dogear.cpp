@@ -377,8 +377,6 @@ int main(const int argc, const char * argv[]) {
          edit();
       } else if(cmd == "clean") {
          clean();
-      } else if(cmd == "help") {
-         help();
       } else {
          usage();
          exit_code = EX_USAGE;
