@@ -10,7 +10,8 @@ A lot of the time I find that I want to jump directly to a specific folder or su
 A command line utility where you can bookmark directories and then access them using that nickname. It also saves the most recently accessed directories. Essentially the whole bookmark list is ordered by the most recently accessed bookmark. There is also a shell function used to change directories which calls the main program.
 
 ### Note
-Where I'm from we call the act of folding the corner of a page in a book to save your place dogearing it because it looks a bit like a dog's ear.
+1. Where I'm from we call the act of folding the corner of a page in a book to save your place dogearing it because it looks a bit like a dog's ear.
+2. A simpler version of this written as an all-in-one Fish shell script is available [here](https://gist.github.com/apainintheneck/e43fbcf078097667213d1c8dfe39b21c).
 
 ## Example Usage
 ```shell
